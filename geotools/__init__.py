@@ -1,0 +1,1 @@
+from .waterspeed import WSModel
