@@ -7,8 +7,36 @@ import seaborn as sns
 class WSModel:
   '''This class creates a waterspeed model
 
+  To initialize a model with 25m shot point interval, type my_waterspeedmodel_25m_SPI = waterspeed.WSModel(25.00)
+
+  Optional parameters are (with default values): maxcurrent=2, pop_min=5000, pop_max=15000, wsp_bins=[-np.inf, 2.5, 3.0, 3.5, 5.0, 5.5, 6.0, np.inf]
+  maxcurrent, pop_min and pop_max parameters define the plot boundaries. wsp_bins define the water speed intervals.
+   
+  If you want to make the waterspeed plot only, call the method plotwaterspeed. 
+  Example: my_waterspeedmodel_25m_SPI.plotwaterspeed()
+
+  If you want to make a combined plot with water speed and bottom speed, first set the the BSP intervals with the setpoplimits method.
+  
+  Example: my_waterspeedmodel_25m_SPI.setpoplimit(5000)
+  
+  5000 here is then the minimum pop-interval in ms and defines the maximum BSP. Max BSP will be printed out when method is run.
+  Optional parameter is bsplowlimit, which has a default value of 3.0. If you want to change this, see example below.
+  
+  Example: my_waterspeedmodel_25m_SPI.setpoplimit(5000, bsplowlimit=2.5)
+
+  To plot the combined waterspeed / bottom speed plot, run the plotcombspeed method.
+  Example: my_waterspeedmodel_25m_SPI.plotcombspeed()
+
   '''
   def __init__(self, sp_int, maxcurrent=2, pop_min=5000, pop_max=15000, wsp_bins=None):
+    '''
+    To initialize a model with 25m shot point interval, type my_waterspeedmodel_25m_SPI = waterspeed.WSModel(25.00)
+
+    Optional parameters are (with default values): maxcurrent=2, pop_min=5000, pop_max=15000, wsp_bins=[-np.inf, 2.5, 3.0, 3.5, 5.0, 5.5, 6.0, np.inf]
+    maxcurrent, pop_min and pop_max parameters define the plot boundaries. wsp_bins define the water speed intervals.
+
+    '''
+
     self.sp_int = float(sp_int)
     self.maxtailcurrent = -maxcurrent
     self.maxheadcurrent = maxcurrent
@@ -47,6 +75,16 @@ class WSModel:
     return df
 
   def plotwaterspeed(self, cleanreclength=None, minpopint=None, currentmark=1.0):
+    '''
+    
+    If you want to make the waterspeed plot only, call the method plotwaterspeed. 
+    Example: my_waterspeedmodel_25m_SPI.plotwaterspeed()
+
+    Optional parameters is cleanreclength and minpopint which will draw the horizontal lines at corrsponding bottom speeds.
+    cleanreclength could for example be set to the required clean record and minpopint could be the clean record length plus the dither window.
+    Last optional parameter is currentmark, which will draw a vertical dashed line at a current that you want to highlight in the plot.
+
+    '''
     title = 'SP interval: ' + str(self.sp_int) + 'm'
     dftoplot = self.dataframe
     dftoplot['WSP Interval (knots)'] = dftoplot['WSP Interval (knots)'].astype(str)
@@ -83,6 +121,18 @@ class WSModel:
     self.dataframe['BSP Interval (knots)'] = pd.cut(self.dataframe['BSP (knots)'], bins=bsp_bins)
 
   def setpoplimit(self, poplimit, bsplowlimit=3.0):
+    '''
+
+    If you want to make a combined plot with water speed and bottom speed, first set the the BSP intervals with the setpoplimits method.
+  
+    Example: my_waterspeedmodel_25m_SPI.setpoplimit(5000)
+  
+    5000 here is then the minimum pop-interval in ms and defines the maximum BSP. Max BSP will be printed out when method is run.
+    Optional parameter is bsplowlimit, which has a default value of 3.0. If you want to change this, see example below.
+    
+    Example: my_waterspeedmodel_25m_SPI.setpoplimit(5000, bsplowlimit=2.5)
+
+    '''
     maxbottomspeed = np.around(self.sp_int / poplimit * 1000 * 3600/1852, decimals=2)
     print("Max BSP set to: " + str(maxbottomspeed))
     print("Low BSP limit set to: " + str(bsplowlimit))
@@ -96,6 +146,16 @@ class WSModel:
     self.dataframe['BSP Interval (knots)'] = (np.select(condlist_bsp, choicelist_bsp))
 
   def plotcombspeed(self, cleanreclength=None, minpopint=None, currentmark=1.0):
+    '''
+    
+    To plot the combined waterspeed / bottom speed plot, run the plotcombspeed method.
+    Example: my_waterspeedmodel_25m_SPI.plotcombspeed()
+
+    Optional parameters is cleanreclength and minpopint which will draw the horizontal lines at corrsponding bottom speeds.
+    cleanreclength could for example be set to the required clean record and minpopint could be the clean record length plus the dither window.
+    Last optional parameter is currentmark, which will draw a vertical dashed line at a current that you want to highlight in the plot.
+
+    '''
     title = 'SP interval: ' + str(self.sp_int) + 'm'
     dftoplot = self.dataframe
     dftoplot['WSP Interval (knots)'] = dftoplot['WSP Interval (knots)'].astype(str)
