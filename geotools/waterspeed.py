@@ -155,6 +155,8 @@ class WSModel:
     cleanreclength could for example be set to the required clean record and minpopint could be the clean record length plus the dither window.
     Last optional parameter is currentmark, which will draw a vertical dashed line at a current that you want to highlight in the plot.
 
+    This function will fail if setpoplimit is not run first to define the BSP limits.
+
     '''
     title = 'SP interval: ' + str(self.sp_int) + 'm'
     dftoplot = self.dataframe
@@ -176,7 +178,10 @@ class WSModel:
     plt.axvline(currentmark, linestyle=":", color='black')
     dftoplot = dftoplot.rename(columns={'WSP Interval (knots)': 'WSP Interval [kn] (Outer disc)', 'BSP Interval (knots)': 'BSP Interval (Inner dot)'})
     sns.scatterplot(x=dftoplot['Current (knots)'], y=dftoplot['Pop Interval (ms)'], hue=dftoplot['WSP Interval [kn] (Outer disc)'], s=120, marker='o', palette="coolwarm_r")
-    sns.scatterplot(x=dftoplot['Current (knots)'], y=dftoplot['Pop Interval (ms)'], hue=dftoplot['BSP Interval (Inner dot)'], s=30, marker='o', palette="coolwarm_r")
+    try:
+      sns.scatterplot(x=dftoplot['Current (knots)'], y=dftoplot['Pop Interval (ms)'], hue=dftoplot['BSP Interval (Inner dot)'], s=30, marker='o', palette="coolwarm_r")
+    except:
+      print("Pop limit not set. You need to run the method .setpoplimit() on your water speed model first to plot the BSP dots.")
     plt.text(self.maxtailcurrent/2, self.pop_max + 2 * self.pop_inc, 'Tail currents', fontdict=use_fontdict)
     plt.text(self.maxheadcurrent/2, self.pop_max + 2 * self.pop_inc, 'Head currents', fontdict=use_fontdict)
     plt.legend(framealpha=1)
