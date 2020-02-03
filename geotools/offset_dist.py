@@ -27,11 +27,18 @@ class OffsetData:
         df_combined = pd.concat(df_list)
         return df_combined.reset_index()
 
+    def x_limit(self, lower=None, upper=None):
+        if not lower:
+            lower = -np.inf
+        if not upper:
+            upper = np.inf
+        self.df = self.df[(self.df['MidPtX'] >= lower) & (self.df['MidPtX'] <= upper)]
+
     def plot_swarm(self, offsetlim=800, xtickinc=4):
         sns.set_style("whitegrid")
         plt.figure(figsize=(16, 12))
         sns.swarmplot(x='MidPtX', y='Offset', data=self.df[(self.df['Offset'] <= offsetlim)], hue='Configuration')
-        plt.ylim(0, offsetlim)
+        plt.ylim(offsetlim, 0)
         locs, labels = plt.xticks()
         plt.xticks(rotation=-45)
         plt.xticks(locs[::xtickinc], labels[::xtickinc])
@@ -43,6 +50,7 @@ class OffsetData:
         offset_planes = pd.IntervalIndex.from_breaks(offset_breaks)
         #print(offset_planes)
         self.df['Offsetclass'] = pd.cut(self.df['Offset'], offset_planes)
+        self.offset_inc = incr
 
     def hist_offsetclass(self):
         try:
@@ -53,18 +61,55 @@ class OffsetData:
         except ValueError:
             print("Error: Did you forget to run the makeoffsetclass method?")
 
-    def _offsetclassbinning(self, df_input):
-        df_binned = df_input.groupby(['Offsetclass', 'MidPtX']).count().rename(columns={'ShotNo': 'Count'}).filter(['Count']).reset_index()
-        df_binned_pivot = df_binned.pivot('Offsetclass', 'MidPtX', 'Count')
-        return df_binned_pivot
+    def _make_nan_bins(self, input):
+        cols = input.columns
+        cols_diff = []
+        cols_diff = []
+        for i in range(0, len(cols)):
+            #print(i, cols[i])
+            if i>0:
+                col_diff = cols[i] - cols[i-1]
+                #print(col_diff)
+                cols_diff.append(col_diff)
+        bin_size = min(cols_diff)
+        new_cols = np.arange(min(cols), max(cols)+bin_size, bin_size)
+        cols_set = set(cols)
+        cols_new_set = set(new_cols)
+        cols_to_add = cols_new_set.difference(cols_set)
+        #print("Will add the following nan columns: ", cols_to_add)
+        for col in cols_to_add:
+            #print(col)
+            input[col]=np.nan
+        return input.sort_index(axis=1), bin_size
 
-    def plot_offset_bins(self):
+
+    def offsetclassbinning(self):
+        self.binned = {}
+        self.bin_size = {}
+        #self.binned_temp = {}
         for configuration in self.configurations:
-            df_binned_pivot = self._offsetclassbinning(self.df[self.df['Configuration']==configuration])
+            df_binned = pd.DataFrame()
+            df_binned = self.df[self.df['Configuration']==configuration].groupby(['Offsetclass', 'MidPtX']).count().rename(columns={'ShotNo': 'Count'}).filter(['Count']).reset_index()
+            df_binned_pivot = df_binned.pivot('Offsetclass', 'MidPtX', 'Count')
+            #self.binned[configuration] = df_binned_pivot
+            self.binned[configuration], self.bin_size[configuration] = self._make_nan_bins(df_binned_pivot)
+            print(f'Bin size seems to be {self.bin_size[configuration]} for the configuration {configuration}.')
+            #self.binned_temp[configuration] = df_binned
+
+    # def _offsetclassbinning(self, df_input):
+    #     df_binned = df_input.groupby(['Offsetclass', 'MidPtX']).count().rename(columns={'ShotNo': 'Count'}).filter(['Count']).reset_index()
+    #     df_binned_pivot = df_binned.pivot('Offsetclass', 'MidPtX', 'Count')
+    #     return df_binned_pivot
+
+
+    def plot_offset_bins(self, maxfold=18):
+        for configuration in self.configurations:
+            #df_binned_pivot = self._offsetclassbinning(self.df[self.df['Configuration']==configuration])
             plt.figure(figsize=(30, 12))
             sns.set_style('dark')
             pal = sns.color_palette('Reds')
-            sns.heatmap(df_binned_pivot, cmap=pal, vmin=1, vmax=18, linewidths=0.1)
+            #sns.heatmap(df_binned_pivot, cmap=pal, vmin=1, vmax=18, linewidths=0.1)
+            sns.heatmap(self.binned[configuration], cmap=pal, vmin=1, vmax=maxfold, linewidths=0.1)
             plt.title(configuration)
             plt.xticks(rotation=-90)
             plt.show()
@@ -75,41 +120,70 @@ class OffsetData:
         self.df['OffsetX'] = self.df.apply(lambda row: row.Offset*np.sin(np.deg2rad(row.AzSrc)), axis=1)
         print("Done!")
 
-    def _getmaxlength(self, arr): 
-        # intitialize count 
-        count = 0 
-        # initialize max 
-        result = 0 
-        for i in range(0, len(arr)): 
-            # Reset count when True is found 
-            if arr[i]: 
-                count = 0
-            # If False is found, increment count 
-            # and update result if count  
-            # becomes more. 
-            else: 
-                # increase count 
-                count+= 1 
-                result = max(result, count)              
-        return result
+    # def _getmaxlength(self, arr): 
+    #     # intitialize count 
+    #     count = 0 
+    #     # initialize max 
+    #     result = 0 
+    #     for i in range(0, len(arr)): 
+    #         # Reset count when True is found 
+    #         if arr[i]: 
+    #             count = 0
+    #         # If False is found, increment count 
+    #         # and update result if count  
+    #         # becomes more. 
+    #         else: 
+    #             # increase count 
+    #             count+= 1 
+    #             result = max(result, count)              
+    #     return result
 
     def _count_empty_bins(self, configuration):
-        df_binned_pivot = self._offsetclassbinning(self.df[self.df['Configuration']==configuration])
-        empty_bins_count = pd.notnull(df_binned_pivot).reset_index().apply(lambda row: self._getmaxlength(row), axis=1)
+        def getmaxlength(arr):
+            # intitialize count 
+            count = 0 
+            # initialize max 
+            result = 0 
+            for i in range(0, len(arr)): 
+                # Reset count when True is found 
+                if arr[i]: 
+                    count = 0
+                # If False is found, increment count 
+                # and update result if count  
+                # becomes more. 
+                else: 
+                    # increase count 
+                    count+= 1 
+                    result = max(result, count)              
+            return result 
+ 
+        empty_bins_count = pd.notnull(self.binned[configuration]).reset_index().apply(lambda row: getmaxlength(row), axis=1)
         return empty_bins_count
 
-    def plot_empty_bins(self):
+    def plot_empty_bins(self, range=False, y_max=None):
+        if not y_max:
+            if range:
+                y_max = 500
+            else:
+                y_max = 25
         plt.figure(figsize=(16, 12))
         sns.set_style('whitegrid')
         for configuration in self.configurations:
-            count_for_conf = self._count_empty_bins(configuration)
+            if range:
+                count_for_conf = self._count_empty_bins(configuration) * self.bin_size[configuration]
+            else:
+                count_for_conf = self._count_empty_bins(configuration)
             plt.plot(count_for_conf, label=configuration)
         plt.legend()
-        plt.xlabel('Offset Class (25m increment)')
-        plt.ylabel('Number consecutive empty xline bins')
-        plt.title('Number of Empty x-line bins afo Offset Class')
-        plt.ylim(0, 25)
-
+        plt.xlabel(f'Offset Class ({self.offset_inc}m increment)')
+        if range:
+            plt.ylabel('X-line range of consecutive empty bins [m]')
+            plt.title('Empty x-line Range afo Offset Class')
+            plt.ylim(0, y_max)
+        else:
+            plt.ylabel('Number consecutive empty xline bins')
+            plt.title('Number of Empty x-line bins afo Offset Class')
+            plt.ylim(0, y_max)
 
 
     
