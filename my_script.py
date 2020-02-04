@@ -5,8 +5,18 @@ from geotools import waterspeed, input_tools, fourD_tools
 
 
 #help(waterspeed)
-#wspmodel_2500 = waterspeed.WSModel(sp_int=25, maxcurrent=3, pop_min=2000, pop_max=15000)
-#wspmodel_9375 = waterspeed.WSModel(9.375, pop_min=2000, pop_max=5000)
+wspmodel_2500 = waterspeed.WSModel(sp_int=25.00, pop_min=4000, pop_max=15000)
+wspmodel_1875 = waterspeed.WSModel(sp_int=18.75, pop_min=4000, pop_max=15000)
+
+wspmodel_2500.setpoplimit(6200, bsplowlimit=4.5)
+wspmodel_1875.setpoplimit(6200, bsplowlimit=4.5)
+
+wspmodel_2500.plotcombspeed(cleanreclength=6200)
+wspmodel_1875.plotcombspeed(cleanreclength=6200)
+
+wspmodel_2500.plotwaterspeed(cleanreclength=6200)
+wspmodel_1875.plotwaterspeed(cleanreclength=6200)
+
 
 #wspmodel_9375.plotwaterspeed()
 #wspmodel_9375.setbsplimits([3.0, 4.5])
@@ -32,23 +42,23 @@ from geotools import waterspeed, input_tools, fourD_tools
 #print(df.columns)
 #print(pd.isna(df).sum())
 
-path = './testfiles/4D/'
+# path = './testfiles/4D/'
 
-repeatability_files = {
-    '10x75m - 2deg on 8x75m': path + 'Gap_REFf2-2_on_POLf0-s.A1X',
-    '12x75m - 2deg on 8x75m': path + 'Gap_12x75f2-2_on_POLf0-s.A1X',
-    '19x37.5m - 2deg on 8x75m': path + 'Gap_19x37f2-2_on_POLf0-s.A1X',
-    '19x37.5m - 4deg on 8x75m': path + 'Gap_19x37f4-4_on_POLf0-s.A1X',
-    '19x37.5m - 150perc Fanning - 2deg on 8x75m': path + 'Gap_19x37fanf2-2_POLf0-s.A1X',
-    '19x37.5m - 150perc Fanning - 4deg on 8x75m': path + 'Gap_19x37fanf4-4_POLf0-s.A1X',
-}
+# repeatability_files = {
+#     '10x75m - 2deg on 8x75m': path + 'Gap_REFf2-2_on_POLf0-s.A1X',
+#     '12x75m - 2deg on 8x75m': path + 'Gap_12x75f2-2_on_POLf0-s.A1X',
+#     '19x37.5m - 2deg on 8x75m': path + 'Gap_19x37f2-2_on_POLf0-s.A1X',
+#     '19x37.5m - 4deg on 8x75m': path + 'Gap_19x37f4-4_on_POLf0-s.A1X',
+#     '19x37.5m - 150perc Fanning - 2deg on 8x75m': path + 'Gap_19x37fanf2-2_POLf0-s.A1X',
+#     '19x37.5m - 150perc Fanning - 4deg on 8x75m': path + 'Gap_19x37fanf4-4_POLf0-s.A1X',
+# }
 
-test_4d_data = fourD_tools.RepeatabilityData(repeatability_files)
-#print(test_4d_data.filenames)
-print(test_4d_data.df.columns)
-test_4d_data.offsetsplit(100, 408)
-print(test_4d_data.df.columns)
-print(test_4d_data.make_summary('10x75m - 2deg on 8x75m', 'OffsDiff'))
-print(test_4d_data.scenarios)
-print(test_4d_data.make_full_summary())
-test_4d_data.plot_all_dist()
+# test_4d_data = fourD_tools.RepeatabilityData(repeatability_files)
+# #print(test_4d_data.filenames)
+# print(test_4d_data.df.columns)
+# test_4d_data.offsetsplit(100, 408)
+# print(test_4d_data.df.columns)
+# print(test_4d_data.make_summary('10x75m - 2deg on 8x75m', 'OffsDiff'))
+# print(test_4d_data.scenarios)
+# print(test_4d_data.make_full_summary())
+# test_4d_data.plot_all_dist()

@@ -111,7 +111,7 @@ class WSModel:
     plt.text(self.maxheadcurrent/2, self.pop_max + 2 * self.pop_inc, 'Head currents', fontdict=use_fontdict)
     #
     #plt.text(4, req_rec_length2, 'Record length with dither: '+str(req_rec_length2) +'ms', horizontalalignment='right', bbox=dict(facecolor='white', alpha=0.8))
-    plt.legend(framealpha=1)
+    plt.legend(framealpha=1, loc='lower left')
     plt.show()
 
   def setbsplimits(self, bsp_bins):

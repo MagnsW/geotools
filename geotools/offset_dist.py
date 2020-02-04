@@ -167,7 +167,16 @@ class OffsetData:
             else:
                 y_max = 25
         plt.figure(figsize=(16, 12))
-        sns.set_style('whitegrid')
+        #sns.set_style('whitegrid')
+        
+        sns.set_style('dark', {'axes.grid': True, 
+            'xtick.bottom': True, 
+            'xtick.top': True,
+            'ytick.left': True, 
+            'ytick.right': True,
+            })
+        plt.xticks(np.arange(0, 25,1))
+        plt.yticks(np.arange(0, y_max, np.ceil(y_max/25)))
         for configuration in self.configurations:
             if range:
                 count_for_conf = self._count_empty_bins(configuration) * self.bin_size[configuration]
@@ -182,8 +191,8 @@ class OffsetData:
             plt.ylim(0, y_max)
         else:
             plt.ylabel('Number consecutive empty xline bins')
-            plt.title('Number of Empty x-line bins afo Offset Class')
+            plt.title('Number of Consecutive Empty x-line bins afo Offset Class')
             plt.ylim(0, y_max)
 
-
+        
     
