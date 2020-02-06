@@ -34,6 +34,13 @@ class OffsetData:
             upper = np.inf
         self.df = self.df[(self.df['MidPtX'] >= lower) & (self.df['MidPtX'] <= upper)]
 
+    def offset_limit(self, lower=None, upper=None):
+        if not lower:
+            lower = -np.inf
+        if not upper:
+            upper = np.inf
+        self.df = self.df[(self.df['Offset'] >= lower) & (self.df['Offset'] <= upper)]
+
     def plot_swarm(self, offsetlim=800, xtickinc=4):
         sns.set_style("whitegrid")
         plt.figure(figsize=(16, 12))
@@ -51,6 +58,7 @@ class OffsetData:
         #print(offset_planes)
         self.df['Offsetclass'] = pd.cut(self.df['Offset'], offset_planes)
         self.offset_inc = incr
+        self.num_offset_planes = len(offset_planes)
 
     def hist_offsetclass(self):
         try:
@@ -175,7 +183,7 @@ class OffsetData:
             'ytick.left': True, 
             'ytick.right': True,
             })
-        plt.xticks(np.arange(0, 25,1))
+        plt.xticks(np.arange(0, self.num_offset_planes,1))
         plt.yticks(np.arange(0, y_max, np.ceil(y_max/25)))
         for configuration in self.configurations:
             if range:
