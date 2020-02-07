@@ -99,12 +99,6 @@ class OffsetData:
             print(df_to_add_temp)
             self.df = self.df.append(df_to_add_temp, ignore_index=True, sort=True)
 
-
-
-
-
-
-
     def _make_nan_bins(self, input):
         cols = input.columns
         cols_diff = []
@@ -236,6 +230,18 @@ class OffsetData:
             plt.ylabel('Number consecutive empty xline bins')
             plt.title('Number of Consecutive Empty x-line bins afo Offset Class')
             plt.ylim(0, y_max)
+
+    def make_stats(self, attr='AzSrc', minoff=200, maxoff=400):
+        stats = {}
+        for configuration in self.configurations:
+            temp = self.df[(self.df['Offset'] <= maxoff) & (self.df['Offset'] >= minoff)]
+            temp = temp[(temp['Configuration'] == configuration)]
+            stats_temp = temp.groupby(['MidPtX'])[attr].describe().reset_index()
+            print("Configuration: ", configuration)
+            print(stats_temp)
+            stats[configuration] = stats_temp
+        self.stats = stats
+
 
         
     
