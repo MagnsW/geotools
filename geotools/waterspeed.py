@@ -88,7 +88,7 @@ class WSModel:
     title = 'SP interval: ' + str(self.sp_int) + 'm'
     dftoplot = self.dataframe
     dftoplot['WSP Interval (knots)'] = dftoplot['WSP Interval (knots)'].astype(str)
-    #dftoplot = self.dataframe.sort_values(by=['WSP Interval (knots)'], ascending=False)
+    dftoplot = dftoplot.sort_values(by=['WSP Interval (knots)'], ascending=False)
     use_fontdict = {'fontsize': 20, 'fontweight' : 20, 'verticalalignment': 'baseline', 'horizontalalignment': 'center'}
     sns.set_style("whitegrid")
     plt.figure(figsize=(18, 10))
@@ -161,6 +161,7 @@ class WSModel:
     title = 'SP interval: ' + str(self.sp_int) + 'm'
     dftoplot = self.dataframe
     dftoplot['WSP Interval (knots)'] = dftoplot['WSP Interval (knots)'].astype(str)
+    dftoplot = dftoplot.sort_values(by=['WSP Interval (knots)'], ascending=False)
     use_fontdict = {'fontsize': 20, 'fontweight' : 20, 'verticalalignment': 'baseline', 'horizontalalignment': 'center'}
     sns.set_style("whitegrid")
     plt.figure(figsize=(18, 10))

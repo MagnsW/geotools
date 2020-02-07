@@ -69,9 +69,44 @@ class OffsetData:
         except ValueError:
             print("Error: Did you forget to run the makeoffsetclass method?")
 
+    def fill_empty_sublines(self):
+        for configuration in self.configurations:
+            midpoints_current = self.df[self.df['Configuration']==configuration]['MidPtX'].unique()
+            midpoints_current.sort()
+            x_min = midpoints_current.min()
+            x_max = midpoints_current.max()
+            midpoint_diffs = []
+            for i in range(0, len(midpoints_current)):
+                if i > 0:
+                    midpoint_diff = midpoints_current[i] - midpoints_current[i-1]
+                    midpoint_diffs.append(midpoint_diff)
+            bin_size = min(midpoint_diffs)
+            print(f'Bin size seems to be {bin_size} for the configuration {configuration}.')
+            midpoints_complete = np.arange(min(midpoints_current), max(midpoints_current)+bin_size, bin_size)
+            midpoints_current_set = set(midpoints_current)
+            midpoints_complete_set = set(midpoints_complete)
+            midpoints_add = midpoints_complete_set.difference(midpoints_current_set)
+            dict_to_add = {}
+            # for midpoint in midpoints_add:
+            #     dict_to_add['MidPtX'] = midpoint
+            #     dict_to_add['Configuration'] = configuration
+            #     print("Adding midpoint: ", dict_to_add)
+            # 
+            dict_to_add['MidPtX'] = list(midpoints_add)
+            dict_to_add['Configuration'] = [configuration] * len(midpoints_add)
+            print(f"Adding the following midpoints to {configuration}: ")
+            df_to_add_temp= pd.DataFrame(dict_to_add)
+            print(df_to_add_temp)
+            self.df = self.df.append(df_to_add_temp, ignore_index=True, sort=True)
+
+
+
+
+
+
+
     def _make_nan_bins(self, input):
         cols = input.columns
-        cols_diff = []
         cols_diff = []
         for i in range(0, len(cols)):
             #print(i, cols[i])
@@ -86,7 +121,7 @@ class OffsetData:
         cols_to_add = cols_new_set.difference(cols_set)
         #print("Will add the following nan columns: ", cols_to_add)
         for col in cols_to_add:
-            #print(col)
+            print(col)
             input[col]=np.nan
         return input.sort_index(axis=1), bin_size
 
