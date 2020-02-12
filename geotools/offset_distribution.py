@@ -202,6 +202,7 @@ class OffsetData:
             sns.heatmap(self.offset_binned[configuration], cmap=pal, vmin=0, vmax=maxfold, linewidths=0.1)
             plt.title(configuration)
             plt.xticks(rotation=-90)
+            plt.yticks(rotation=0)
             plt.show()
 
     def _count_empty_bins(self, configuration):
