@@ -5,17 +5,17 @@ from geotools import waterspeed, input_tools, fourD_tools
 
 
 #help(waterspeed)
-wspmodel_2500 = waterspeed.WSModel(sp_int=25.00, pop_min=4000, pop_max=15000)
-wspmodel_1250 = waterspeed.WSModel(sp_int=12.5, pop_min=4000, pop_max=15000)
+#wspmodel_2500 = waterspeed.WSModel(sp_int=25.00, pop_min=4000, pop_max=15000)
+wspmodel = waterspeed.WSModel(sp_int=25, pop_min=2000, pop_max=14000)
 
-wspmodel_2500.setpoplimit(8000, bsplowlimit=3.5)
-wspmodel_1250.setpoplimit(6000, bsplowlimit=2.5)
+#wspmodel_2500.setpoplimit(8000, bsplowlimit=3.5)
+wspmodel.setpoplimit(6000, bsplowlimit=3.5)
 
-wspmodel_2500.plotcombspeed(cleanreclength=8000)
-wspmodel_1250.plotcombspeed(cleanreclength=6000)
+#wspmodel_2500.plotcombspeed(cleanreclength=8000)
+wspmodel.plotcombspeed(cleanreclength=6000)
 
-wspmodel_2500.plotwaterspeed(cleanreclength=8000)
-wspmodel_1250.plotwaterspeed(cleanreclength=6000)
+#wspmodel_2500.plotwaterspeed(cleanreclength=8000)
+wspmodel.plotwaterspeed(cleanreclength=6000)
 
 
 #wspmodel_9375.plotwaterspeed()

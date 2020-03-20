@@ -262,6 +262,10 @@ class OffsetData:
             plt.ylim(0, y_max)
 
 
+
+    def 
+
+
     # def _make_stats(self):
     #     stats = {}
     #     print("Computing attribute statistics...")
