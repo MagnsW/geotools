@@ -261,9 +261,52 @@ class OffsetData:
             plt.title('Number of Consecutive Empty x-line bins afo Offset Class')
             plt.ylim(0, y_max)
 
+    def plot_stat_for_offset_class(self, offsetplane, config, attrib, descriptor='50%', swarm=True):
+        df_temp = self.df[self.df['Configuration'] == config]
+        bins = df_temp['MidPtX'].unique()
+        df_temp = df_temp[(df_temp['Offsetclass'] == self.offset_planes[offsetplane])]
+        bins_kept = df_temp['MidPtX'].unique()
+        bins_to_add = set(bins).difference(set(bins_kept))
+        dict_to_add = {}
+        dict_to_add['MidPtX'] = sorted(list(bins_to_add))
+        df_to_add = pd.DataFrame(dict_to_add)
+        df_temp = df_temp.append(df_to_add, ignore_index=True, sort=True)
+        df_temp_graph = self.df_attribs_stats[(self.df_attribs_stats['Attribute'] == attrib) & (self.df_attribs_stats['Offsetclass'] == self.offset_planes[offsetplane])]
+        df_temp_graph = df_temp_graph[df_temp_graph['Configuration'] == config]
+        bins_graph_kept = df_temp_graph['MidPtX'].unique()
+        df_temp_graph = df_temp_graph.append(df_to_add, ignore_index=True, sort=True).sort_values(['MidPtX']).reset_index()
+        plt.figure(figsize=(24, 12))
+        sns.set_style('darkgrid')
+        if swarm:
+            sns.swarmplot(x='MidPtX', y=attrib, data=df_temp.reset_index(), hue='Configuration', hue_order=self.configurations)
+        else:
+            sns.boxplot(x='MidPtX', y=attrib, data=df_temp.reset_index(), hue='Configuration', hue_order=self.configurations)
+        sns.lineplot(data=df_temp_graph[descriptor], color='grey', style='.')
+        locs, labels = plt.xticks()
+        plt.xticks(locs[::1], labels[::1], rotation=-90)
+        plt.title(f"Subselection: Offset: {self.offset_planes[offsetplane]}")
+        plt.show()
 
-
-    def 
+    def plot_stat_for_offset_class_comp(self, offsetplane, attrib, descriptor, hist=False, histbins=(0, 180, 5)):
+        df_temp_graph = self.df_attribs_stats[(self.df_attribs_stats['Attribute'] == attrib) & (self.df_attribs_stats['Offsetclass'] == self.offset_planes[offsetplane])]
+        df_temp_graph = df_temp_graph.sort_values(['Configuration', 'MidPtX']).reset_index()
+        df_diff = pd.DataFrame()
+        for config in self.configurations:
+            df_diff_temp = df_temp_graph[df_temp_graph['Configuration'] == config][[descriptor]]
+            df_diff_temp = df_diff_temp.diff().apply(np.abs)
+            df_diff_temp.columns = [descriptor + ' AbsDiff']
+            df_diff = df_diff.append(df_diff_temp)
+        df_temp_graph = pd.concat([df_temp_graph, df_diff],axis=1)
+        plt.figure(figsize=(24, 12))
+        sns.set_style('darkgrid')
+        if hist:
+            for config in self.configurations:
+                sns.distplot(df_temp_graph[df_temp_graph['Configuration'] == config][descriptor + ' AbsDiff'].dropna(), bins = list(np.arange(*histbins)), kde=False, rug=True, label=config)
+        else:
+            sns.lineplot(x='MidPtX', y=descriptor + ' AbsDiff', data=df_temp_graph, hue='Configuration', hue_order=self.configurations)
+        plt.legend()
+        plt.title(f"Subselection: Offset: {self.offset_planes[offsetplane]} for attribute: {attrib}")
+        plt.show()
 
 
     # def _make_stats(self):
