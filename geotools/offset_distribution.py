@@ -301,7 +301,7 @@ class OffsetData:
         sns.set_style('darkgrid')
         if hist:
             for config in self.configurations:
-                sns.distplot(df_temp_graph[df_temp_graph['Configuration'] == config][descriptor + ' AbsDiff'].dropna(), bins = list(np.arange(*histbins)), kde=False, rug=True, label=config)
+                sns.distplot(df_temp_graph[df_temp_graph['Configuration'] == config][descriptor + ' AbsDiff'].dropna(), bins = list(np.arange(*histbins)), kde=False, label=config)
         else:
             sns.lineplot(x='MidPtX', y=descriptor + ' AbsDiff', data=df_temp_graph, hue='Configuration', hue_order=self.configurations)
         plt.legend()
