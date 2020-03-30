@@ -261,7 +261,7 @@ class OffsetData:
             plt.title('Number of Consecutive Empty x-line bins afo Offset Class')
             plt.ylim(0, y_max)
 
-    def plot_stat_for_offset_class(self, offsetplane, config, attrib, descriptor='50%', swarm=True):
+    def plot_stat_for_offset_class(self, offsetplane, config, attrib, descriptor='50%', swarm=True, y_lim=None):
         df_temp = self.df[self.df['Configuration'] == config]
         bins = df_temp['MidPtX'].unique()
         df_temp = df_temp[(df_temp['Offsetclass'] == self.offset_planes[offsetplane])]
@@ -276,6 +276,8 @@ class OffsetData:
         bins_graph_kept = df_temp_graph['MidPtX'].unique()
         df_temp_graph = df_temp_graph.append(df_to_add, ignore_index=True, sort=True).sort_values(['MidPtX']).reset_index()
         plt.figure(figsize=(24, 12))
+        if y_lim:
+            plt.ylim(*y_lim)
         sns.set_style('darkgrid')
         if swarm:
             sns.swarmplot(x='MidPtX', y=attrib, data=df_temp.reset_index(), hue='Configuration', hue_order=self.configurations)
@@ -287,7 +289,7 @@ class OffsetData:
         plt.title(f"Subselection: Offset: {self.offset_planes[offsetplane]}")
         plt.show()
 
-    def plot_stat_for_offset_class_comp(self, offsetplane, attrib, descriptor, hist=False, histbins=(0, 180, 5)):
+    def plot_stat_for_offset_class_comp(self, offsetplane, attrib, descriptor, dist=False, hist=True, kde=False, histbins=(0, 180, 5), linewidth=3):
         df_temp_graph = self.df_attribs_stats[(self.df_attribs_stats['Attribute'] == attrib) & (self.df_attribs_stats['Offsetclass'] == self.offset_planes[offsetplane])]
         df_temp_graph = df_temp_graph.sort_values(['Configuration', 'MidPtX']).reset_index()
         df_diff = pd.DataFrame()
@@ -299,9 +301,10 @@ class OffsetData:
         df_temp_graph = pd.concat([df_temp_graph, df_diff],axis=1)
         plt.figure(figsize=(24, 12))
         sns.set_style('darkgrid')
-        if hist:
+        if dist:
             for config in self.configurations:
-                sns.distplot(df_temp_graph[df_temp_graph['Configuration'] == config][descriptor + ' AbsDiff'].dropna(), bins = list(np.arange(*histbins)), kde=False, label=config)
+                #sns.distplot(df_temp_graph[df_temp_graph['Configuration'] == config][descriptor + ' AbsDiff'].dropna(), bins = list(np.arange(*histbins)), kde=False, hist_kws={"histtype": "step", "linewidth": linewidth}, label=config)
+                sns.distplot(df_temp_graph[df_temp_graph['Configuration'] == config][descriptor + ' AbsDiff'].dropna(), bins = list(np.arange(*histbins)), kde=kde, hist=hist, hist_kws={"histtype": "step", "linewidth": linewidth}, label=config)
         else:
             sns.lineplot(x='MidPtX', y=descriptor + ' AbsDiff', data=df_temp_graph, hue='Configuration', hue_order=self.configurations)
         plt.legend()

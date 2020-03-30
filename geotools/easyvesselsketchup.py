@@ -25,7 +25,7 @@ class VesselSetup:
         self.outerstrmpos = (no_streamers-1)*strm_sep/2
         self.recs = np.arange(-self.outerstrmpos, self.outerstrmpos+strm_sep, strm_sep)
         
-    def interactive_plot(self, gridspace, slider_inc, gridshift=True):
+    def interactive_plot(self, gridspace, slider_inc, gridshift=True, manual=False):
         recs = self.recs
         no_sources = self.no_sources
         if gridshift:
@@ -51,7 +51,7 @@ class VesselSetup:
             cur_axes.axes.get_yaxis().set_ticklabels([])
             plt.legend()
             plt.show()
-        interactive_plot = interactive(f, source_1=(-self.outerstrmpos, self.outerstrmpos, slider_inc), 
+        interactive_plot = interactive(f, {'manual': manual}, source_1=(-self.outerstrmpos, self.outerstrmpos, slider_inc), 
                                           source_2=(-self.outerstrmpos, self.outerstrmpos, slider_inc),
                                           source_3=(-self.outerstrmpos, self.outerstrmpos, slider_inc),
                                           source_4=(-self.outerstrmpos, self.outerstrmpos, slider_inc),
