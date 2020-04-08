@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 import seaborn as sns
 import numpy as np
-from geotools.input_tools import make_df_from_columndata
+from GStools.input_tools import make_df_from_columndata
 
 class OffsetData:
     '''
