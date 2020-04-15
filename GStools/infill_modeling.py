@@ -21,6 +21,7 @@ class IModJob:
         self.targets = {}
         self.vessel = {}
         self.project_name = None
+        self.plm_name = 'PLM'
         print('Initialization complete!')
 
     def read_col_data(self, filename):
@@ -200,8 +201,7 @@ class IModJob:
 <Key name="name" state="default">*</Key>
 </Entity>
 </Entity>
-</Parameter>
-"""
+</Parameter>"""
         return string_intro
 
     def _make_model_string(self):
@@ -209,7 +209,10 @@ class IModJob:
             def row_to_xml(row):
                 xml = ['<ParameterGroup ID="'+item+'">']
                 for i, col_name in enumerate(row.index):
-                    xml.append('  <Parameter ID="{0}" state="changed">{1}</Parameter>'.format(col_name, row.iloc[i]))
+                    value = row.iloc[i]
+                    if i == 0:
+                        value = int(value)
+                    xml.append('<Parameter ID="{0}" state="changed">{1}</Parameter>'.format(col_name, value))
                 xml.append('</ParameterGroup>')
                 return '\n'.join(xml)
             res = '\n'.join(df.apply(row_to_xml, axis=1))
@@ -221,18 +224,77 @@ class IModJob:
         df_model_interfaces["ModelInterfaceMidPointY"] = 0
         df_model_interfaces["ModelInterfaceDip"] = 0
         df_model_interfaces["ModelInterfaceAzim"] = 0
-        df_model_interfaces = df_model_interfaces[['ModelRowLabel', 'ModelInterfaceMidPointX', 'ModelInterfaceMidPointY', 'ModelInterfaceDip', 'ModelInterfaceAzim']]
+        df_model_interfaces = df_model_interfaces[['ModelRowLabel', 'ModelInterfaceMidPointX', 'ModelInterfaceMidPointY', 'ModelInterfaceMidPointZ', 'ModelInterfaceDip', 'ModelInterfaceAzim']]
 
-        
         xml_model_interfaces = to_xml(df_model_interfaces, item='ModelInterface')
 
-        return xml_model_interfaces
+        df_model_layers = self.df_plm_model[['Intf', 'Vp', 'Vs', 'Density', 'Qp', 'Qs']]
+        df_model_layers = df_model_layers.rename(columns={'Intf': "ModelRowLabel", 'Vp': "ModelLayerVp", 'Vs': "ModelLayerVs", 'Density': "ModelLayerDensity", 'Qp': "ModelLayerQp", 'Qs': "ModelLayerQs"})
+        #print(df_model_interfaces.dtypes)
+        #print(df_model_layers.dtypes)
+        xml_model_layers = to_xml(df_model_layers, item='ModelLayer')
+
+        xml_intro_string = f"""
+<Page Enabled="yes" ID="PlaneLayerModelEdit" Expanded="yes">
+<Parameter ID="PlaneLayerModelSpec">
+<Entity name="Project">
+<Key name="name" state="default">{self.project_name}</Key>
+<Entity name="PlaneLayerModel">
+<Key name="name" state="changed">{self.plm_name}</Key>
+</Entity>
+</Entity>
+</Parameter>
+<Parameter ID="ModelSeparator" state="changed"></Parameter>
+<ParameterGroup ID="ModelOrigo">
+<Parameter ID="ModelOrigoEast" state="default">0</Parameter>
+<Parameter ID="ModelOrigoNorth" state="default">0</Parameter>
+</ParameterGroup>
+<ParameterGroup ID="ModelSize">
+<Parameter ID="ModelSizeX" state="changed">20000</Parameter>
+<Parameter ID="ModelSizeY" state="changed">20000</Parameter>
+<Parameter ID="ModelSizeZ" state="changed">{self.max_depth}</Parameter>
+</ParameterGroup>
+<Parameter ID="ModelRotation" state="default">0</Parameter>
+<Parameter ID="ModelSeparator" state="changed"></Parameter>
+<Parameter ID="ModelNumberOfLayers" state="changed">{len(self.df_plm_model)}</Parameter>
+<Parameter ID="ModelNumberOfDiffractors" state="default">0</Parameter>
+<Parameter ID="ModelSeparator" state="changed"></Parameter>
+<Parameter ID="ModelLayerUpdateOption" state="default">No</Parameter>
+<Page Enabled="yes" ID="ModelInterfaces" Expanded="yes">
+"""
+        xml_mid_string = """
+</Page>
+<Page Enabled="yes" ID="ModelLayers" Expanded="yes">
+"""     
+        xml_end_string = """
+</Page>
+</Page>
+</Page>"""
+
+        entire_string = xml_intro_string + xml_model_interfaces + xml_mid_string + xml_model_layers + xml_end_string
+
+        return entire_string
+
+    def _make_vessel_string(self):
+        string = f"""
+
+"""
+
+    def _make_end_string(self):
+        string = f"""
+</Page>
+</Page>
+</Pages>
+"""
+        return string
 
     def generate_job(self, project_name):
         self.project_name = project_name
         string1 = self._make_intro_string()
         string2 = self._make_model_string()
-        full_string = string2
+        #string3 = self._make_vessel_string()
+        string_end = self._make_end_string()
+        full_string = string1 + string2 + string_end
         #_make_model()
         #_make_vessel()
         #_make_modeling()
