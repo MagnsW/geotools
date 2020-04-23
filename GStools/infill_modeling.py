@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
-from GStools.input_tools import make_df_from_columndata
+from GStools.input_tools import make_df_from_columndata, make_df_from_segy
 from GStools import velconvert
 
 class IModJob:
@@ -31,6 +31,12 @@ class IModJob:
         self.df_vels.columns = ['Depth', 'Vp']
         self.df_vels = self.df_vels[['Depth', 'Vp']]
 
+    def read_segy(self, filename):
+        self.df_vels = make_df_from_segy(filename)
+        self.df_vels.columns = ['Depth', 'Vp']
+        self.df_vels = self.df_vels[['Depth', 'Vp']]
+
+
     def velconvert_twt_avg_to_depth_int(self, timeunit='ms'):
         self.df_vels = velconvert.twt_avg_to_depth_int(self.df_vels, timeunit=timeunit)
         self.df_vels = self.df_vels.rename(columns={'Vint': 'Vp'}, errors='raise')
@@ -58,8 +64,8 @@ class IModJob:
         densities = [0.01, 1.00]
         Qps = [100000, 10000]
         Qss = [100000, 10000]
-        for i in range(len(intervals)-1):            
-            avg_vel = self.df_vels[(self.df_vels['Depth'] >= intervals[i]) & (self.df_vels['Depth'] <= intervals[i+1])]['Vp'].mean().round(1)
+        for i in range(len(intervals)-1):
+            avg_vel = np.around(self.df_vels[(self.df_vels['Depth'] >= intervals[i]) & (self.df_vels['Depth'] <= intervals[i+1])]['Vp'].mean())
             #print(i, intervals[i], intervals[i+1], avg_vel)
             density = np.around(0.309588 * avg_vel**0.25, 2)
             depths.append(intervals[i+1])
@@ -76,13 +82,13 @@ class IModJob:
         sns.set_style('whitegrid')
         
         if rotate:
-            sns.regplot(x=self.df_vels['Vp'], y=self.df_vels['Depth'], fit_reg=False)
-            sns.lineplot(x=self.df_plm_model['Vp'], y=self.df_plm_model['Depth'], drawstyle='steps-post')
+            sns.regplot(x=self.df_vels['Vp'], y=self.df_vels['Depth'], fit_reg=False, label='Input Velocities')
+            sns.lineplot(x=self.df_plm_model['Vp'], y=self.df_plm_model['Depth'], drawstyle='steps-post', label='Model Velocities')
             plt.ylim(self.max_depth, -100)
             plt.xlim(self.airvel, self.max_vel+200)
         else:
-            sns.regplot(y=self.df_vels['Vp'], x=self.df_vels['Depth'], fit_reg=False)
-            sns.lineplot(y=self.df_plm_model['Vp'], x=self.df_plm_model['Depth'], drawstyle='steps-pre')
+            sns.regplot(y=self.df_vels['Vp'], x=self.df_vels['Depth'], fit_reg=False, label='Input Velocities')
+            sns.lineplot(y=self.df_plm_model['Vp'], x=self.df_plm_model['Depth'], drawstyle='steps-pre', label='Model Velocities')
             plt.xlim(-100, self.max_depth,)
             plt.ylim(self.airvel, self.max_vel+200)
         
@@ -329,7 +335,7 @@ class IModJob:
 <Parameter ID="VesselStreamerType" state="default">Conventional</Parameter>
 <Parameter ID="VesselStreamerDepth" state="default">{self.vessel['VesselStreamerDepth']}</Parameter>
 <Parameter ID="VesselNumberOfGroupsPerStreamer" state="changed">{self.vessel['VesselNumberOfGroupsPerStreamer']}</Parameter>
-<Parameter ID="VesselDefaultStreamerX" state="default">{self.vessel['VesselDefaultStreamerX']}</Parameter>
+<Parameter ID="VesselDefaultStreamerX" state="changed">{self.vessel['VesselDefaultStreamerX']}</Parameter>
 <Parameter ID="VesselGroupInterval" state="default">{self.vessel['VesselGroupInterval']}</Parameter>
 <Parameter ID="VesselFeatherType" state="default">None</Parameter>
 <Parameter ID="VesselCalcStackFold" state="default">120</Parameter>
