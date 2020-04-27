@@ -31,19 +31,52 @@ class IModJob:
         self.df_vels.columns = ['Depth', 'Vp']
         self.df_vels = self.df_vels[['Depth', 'Vp']]
 
+    def read_col_data_depth_twt(self, filename, timeunit='ms'):
+        if timeunit == 's':
+            c = 1
+        elif timeunit == 'ms':
+            c = 1000
+        else:
+            print('Wrong time unit given. Defaulting to miliseconds')
+            c = 1000
+        df_temp = make_df_from_columndata(filename).reset_index().drop(columns=['numRows'])
+        df_temp.columns = ['Depth', 'TWT']
+        df_temp['Vp'] = 2 * c * df_temp['Depth'] / df_temp['TWT']
+        print(df_temp)
+        df_temp = df_temp.interpolate(limit_direction='backward')
+        print(df_temp)
+        self.df_vels = df_temp[['Depth', 'Vp']]
+        print('Velocity calculated is average, use method "velconvert_depth_avg_to_depth_int" before model building')
+
     def read_segy(self, filename):
         self.df_vels = make_df_from_segy(filename)
         self.df_vels.columns = ['Depth', 'Vp']
         self.df_vels = self.df_vels[['Depth', 'Vp']]
+        self.df_vels = self.df_vels.interpolate(limit_direction='backward')
 
 
     def velconvert_twt_avg_to_depth_int(self, timeunit='ms'):
         self.df_vels = velconvert.twt_avg_to_depth_int(self.df_vels, timeunit=timeunit)
         self.df_vels = self.df_vels.rename(columns={'Vint': 'Vp'}, errors='raise')
+        self.df_vels = self.df_vels.interpolate(limit_direction='backward')
 
     def velconvert_depth_avg_to_depth_int(self):
         self.df_vels = velconvert.depth_avg_to_depth_int(self.df_vels)
         self.df_vels = self.df_vels.rename(columns={'Vint': 'Vp'}, errors='raise')
+        self.df_vels = self.df_vels.interpolate(limit_direction='backward')
+
+    def add_depth_samples(self, maxdepth=None, inc=50):
+        if maxdepth:
+            max_depth = maxdepth
+        else:
+            max_depth = self.df_vels['Depth'].max()
+        depth_resampled = np.arange(0, max_depth, inc)
+        df_temp = pd.DataFrame(depth_resampled, columns=['Depth'])
+        df_temp['Vp'] = np.nan
+        self.df_vels = self.df_vels.append(df_temp)
+        self.df_vels = self.df_vels.drop_duplicates(subset=['Depth'], keep='first')
+        self.df_vels = self.df_vels.sort_values(by=['Depth'])
+        self.df_vels = self.df_vels.interpolate(limit_direction='both')
 
     def make_model(self, waterdepth, watervel=None, step=None, intervals=None, max_depth=None, Qp=200.0):
         if not max_depth:
@@ -186,6 +219,7 @@ class IModJob:
     def make_specs(self):
         #df_specs = pd.DataFrame(columns=('Group', 'amplow', 'amphigh', 'timelow', 'timehigh'))
         lasti = len(self.offsetgroups)-1
+        self.specs = {}
         for i, group in enumerate(self.offsetgroups):
             if i == 0:
                 self.specs[group] = {'amplow': 1.0, 'amphigh': 2.0, 'timelow': 0.5, 'timehigh': 1.0}
