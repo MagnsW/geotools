@@ -6,6 +6,105 @@ from GStools.input_tools import make_df_from_columndata, make_df_from_segy
 from GStools import velconvert
 
 class IModJob:
+    '''The IModJob class creates an Infill Modeling Job object. 
+    Step 1: To initialize, use:
+
+    my_imod_job = infill_modeling.IModJob()
+    
+    Step 2: Create velocity function: 
+    Next step is to read in the 1D velocity function. Depending on the format
+    of the input, the following commands should work:
+
+    Nucleus column data where columns are TWT/depth and velocity:
+    my_imod_job.read_col_data(filename.A1X)
+
+    Nucleus column data where columns are depth and TWT :
+    my_imod_job.read_col_data_depth_twt(depth_twt_filename)
+    Note that this will create average velocites which will need to be converted
+    to interval velocities using the method velconvert_depth_avg_to_depth_int
+    described later.
+
+    Segy:
+    my_imod_job.read_segy(segy_filename.sgy)
+
+    After being read in, the velocities can be printed by:
+    In Jupyter:
+    my_imod_job.df_vels 
+    or outside Jupyter: 
+    print(my_imod_job.df_vels)
+
+    For a graph: 
+    my_imod_job.df_vels.plot(x='Depth', y='Vp')
+
+    For velocity conversions, the following methods may be used:
+    my_imod_job.velconvert_depth_avg_to_depth_int()
+    my_imod_job.velconvert_twt_avg_to_depth_int()
+
+    Also more samples may be added with the method:
+    my_imod_job.add_depth_samples()
+    This should ensure that there are enough samples between the PLM interfaces
+    so that average properties may be computed for each layer. This method can
+    also increase the depth of the velocity function by flooding. 
+    (maxdepth argument)
+
+    Step 3: Create the PLM:
+    my_imod_job.make_model(waterdepth=285, max_depth=4000, watervel=1550, Qp=120)
+    If watervelocity is not stated, the velocity from the velocity function:
+    my_imod_job.df_vels will be used. 
+
+    For a QC plot of the velocity samples and the PLM velocities:
+    my_imod_job.plot_vels()
+
+    To view the PLM:
+    my_imod_job.df_plm_model
+
+    Step 4: Define the mute.
+    For 100% stretch mute (or 60 degree angle mute):
+
+    my_imod_job.compute_mute_offset(100)
+
+    To list the mute offsets on each interface in the PLM:
+    my_imod_job.df_plm_mutes
+
+    Step 5: Define offset classes:
+    my_imod_job.makeoffsetclass(100, 4100, 4)
+
+    Step 6: Set targets for each offset class:
+    my_imod_job.set_targets(50)
+    The 50 in this examples means that each offset group will have 50% unmuted
+    traces for the target selected
+
+    Step 7: Define vessel:
+    
+    my_imod_job.make_vessel(name='TestVessel', no_sources=3, no_strm=12, subline_sep=18.75, spi=12.5, no_chan=640, first_rec_x=250, source_name='3280T__060_2000_080')
+    
+    Inspect vessel: print(my_imod_job.vessel)
+
+    Step 8: Make the specs:
+    
+    my_imod_job.make_specs()
+
+    Inspect specs: print(my_imod_job.specs)
+
+    Step 9: Create Nucleus job: 
+    my_imod_job.generate_job(project_path, project_name, filename)
+
+    with for example:
+    project_path = '/lus/ossi001/GeoSupportNV/' (path to nucleus project)
+    project_name = '2020_04_Auto_Infill' (Nucleus project name)
+    filename= 'Infill_job.Top Page.Workspace.J1X' (file name of Nucleus job file)
+
+    The job will also print to terminal and may be copy-pasted into an editor 
+    if that is more conveinient. If no filename is given, only the terminal 
+    output will be produced
+
+
+
+
+
+    '''
+
+
     def __init__(self):
         self.df_vels = pd.DataFrame()
         self.df_plm_model = pd.DataFrame()
@@ -21,6 +120,7 @@ class IModJob:
         self.targets = {}
         self.vessel = {}
         self.project_name = None
+        self.project_path = None
         self.plm_name = 'PLM'
         self.reflection_times = {}
         self.specs = {}
@@ -78,7 +178,7 @@ class IModJob:
         self.df_vels = self.df_vels.sort_values(by=['Depth'])
         self.df_vels = self.df_vels.interpolate(limit_direction='both')
 
-    def make_model(self, waterdepth, watervel=None, step=None, intervals=None, max_depth=None, Qp=200.0):
+    def make_model(self, waterdepth, watervel=None, step=None, intervals=None, max_depth=None, Qp=200.0, name=None):
         if not max_depth:
             max_depth = self.df_vels['Depth'].max()
         self.max_depth = max_depth
@@ -91,6 +191,8 @@ class IModJob:
         if not intervals:
             intervals = list(np.arange(waterdepth, max_depth + step, step))
         print('The depths defined in the model are: ' + str(intervals))
+        if name:
+            self.plm_name = name
         intfno = list(range(1, len(intervals)+1))
         depths = [0, waterdepth]
         avg_vels = [self.airvel, watervel]
@@ -198,6 +300,9 @@ class IModJob:
         print(self.targets)
 
     def make_vessel(self, name, no_sources, no_strm, subline_sep, spi, no_chan, first_rec_x, source_name):
+        source_depth = int(source_name[7:10]) /10
+        strm_depth = source_depth + 1
+        print(f'Streamer depth set to: {source_depth}m, streamer depth will be set to {strm_depth}m')
         req_rec_length = self.df_plm_mutes[self.df_plm_mutes['Intf'] == list(self.targets.values())[-1]]['TWT'].values[0]
         print('Deepest target TWT(s) is: ' + str(req_rec_length))
         rec_length = int(np.ceil(req_rec_length + 2) * 1000)
@@ -210,7 +315,7 @@ class IModJob:
             "VesselNumberOfStreamers": no_strm,
             "VesselSubSurfaceLineSep": subline_sep,
             "VesselShotPointDistance": spi,
-            "VesselStreamerDepth": 8,
+            "VesselStreamerDepth": strm_depth,
             "VesselNumberOfGroupsPerStreamer": no_chan,
             "VesselDefaultStreamerX": first_rec_x,
             "VesselGroupInterval": 12.5,
@@ -499,7 +604,7 @@ class IModJob:
 <Parameter ID="Kpstm_Reflection" state="default">Yes</Parameter>
 <Parameter ID="Kpstm_Absorption" state="default">Yes</Parameter>
 <Parameter ID="Kpstm_SRdirectivity" state="default">Yes</Parameter>
-<Parameter ID="Kpstm_ReceiverGhostOption" state="default">No receiver ghost</Parameter>
+<Parameter ID="Kpstm_ReceiverGhostOption" state="changed">Standard calculations</Parameter>
 <Parameter ID="Kpstm_SourceGhostOption" state="default">Yes</Parameter>
 <ParameterGroup ID="Kpstm_WhiteNoise">
 <Parameter ID="Kpstm_white_noise" state="default">No</Parameter>
@@ -725,7 +830,7 @@ class IModJob:
 <Parameter ID="Infill_HoleSizeIncLog" state="changed">{self.vessel['VesselSubSurfaceLineSep']}</Parameter>
 <Parameter ID="Infill_OutputSeparator" state="changed"></Parameter>
 <Parameter ID="Infill_OutputLogFile" state="changed">No</Parameter>
-<Parameter ID="Infill_OutputLogFileSpec" state="changed">/lus/ossi001/GeoSupportNV/{self.project_name}/ExternalData/{group}</Parameter>
+<Parameter ID="Infill_OutputLogFileSpec" state="changed">{self.project_path}{self.project_name}/ExternalData/{group}_log</Parameter>
 <Parameter ID="Infill_OutputColData" state="changed">Yes</Parameter>
 <Parameter ID="Infill_OutputColDataSpec">
 <Entity name="Project">
@@ -748,8 +853,9 @@ class IModJob:
 
         return res
 
-    def generate_job(self, project_name, filename):
+    def generate_job(self, project_path, project_name, filename=None):
         self.project_name = project_name
+        self.project_path = project_path
         string1 = self._make_intro_string()
         string2 = self._make_model_string()
         string3 = self._make_vessel_string()
@@ -760,9 +866,10 @@ class IModJob:
         #_make_vessel()
         #_make_modeling()
         print(full_string)
-        with open(filename, 'w') as f:
-            f.write(full_string)
-            f.close()
+        if filename:
+            with open(filename, 'w') as f:
+                f.write(full_string)
+                f.close()
 
 
 
